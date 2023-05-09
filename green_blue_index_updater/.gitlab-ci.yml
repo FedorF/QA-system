@@ -1,0 +1,28 @@
+stages:
+  - deploy
+  - balance
+  - disable
+
+update_index:
+  stage: deploy
+  before_script: 
+    - echo "Updating index on 65.108.144.165"
+    - ssh root@65.108.144.165 "cp -r /var/models/$INDEX_GENERATION_NEW/* /root/qa_system/share/$INDEX_GENERATION_NEW/"
+  script:
+    - echo "Updating index on 135.181.204.59"
+    - ssh root@135.181.204.59 "cp -r /var/models/$INDEX_GENERATION_NEW/* /root/qa_system/share/$INDEX_GENERATION_NEW/"
+
+    - echo "Deploying new version application on swarm master node"
+    - scp -r /builds/hardml/green-blue-index-updater/docker-compose.yml root@135.181.204.59:~/qa_system/docker-compose.yml
+    - ssh root@135.181.204.59 "docker stack deploy --compose-file qa_system/docker-compose.yml qa_system_$INDEX_GENERATION_NEW"
+
+reroute_traffic_to_new:
+  stage: balance
+  script: 
+    - scp -r /builds/hardml/green-blue-index-updater/new.conf root@135.181.204.59:/etc/nginx/new.conf
+    - ssh root@135.181.204.59 "systemctl restart nginx"
+
+disable_old:
+  stage: disable
+  script:
+    - docker rm qa_system_$INDEX_GENERATION_OLD

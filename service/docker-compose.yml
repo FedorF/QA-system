@@ -1,0 +1,86 @@
+version: "3.8"
+services:
+  gateway:
+    image: 135.181.204.59:5000/gateway
+    build: gateway/
+    ports:
+      - 1000:1000
+    volumes:
+      - /root/qa_system/share:/app/models
+    environment:
+      - FLASK_PORT=1000
+      - INDEXER_URL=http://135.181.204.59:300
+      - EMBEDDER_URL=http://135.181.204.59:8501/v1/models/use:predict
+      - CENTROIDS_PATH=models/clusters_centers_use.pkl
+    command: python3 main.py
+    depends_on:
+      - embedder
+      - indexer_cl_0
+      - indexer_cl_1
+      - indexer_cl_2
+      - indexer_cl_3
+
+  embedder:
+    image: tensorflow/serving
+    ports:
+      - 8501:8501
+    volumes:
+      - /root/qa_system/share/use_model:/models/use
+    environment:
+      - MODEL_NAME=use
+
+  indexer_cl_0:
+    image: 135.181.204.59:5000/indexer
+    build: indexer/
+    ports:
+      - 3000:3000
+    volumes:
+      - /root/qa_system/share:/app/models
+    environment:
+      - FLASK_PORT=3000
+      - ANSWER_EMBED_PATH=models/use_embeddings_cl0.pkl
+      - EMB_SIZE=512
+      - CLUSTER_ID=0
+    command: python3 main.py
+
+  indexer_cl_1:
+    image: 135.181.204.59:5000/indexer
+    build: indexer/
+    ports:
+      - 3001:3001
+    volumes:
+      - /root/qa_system/share:/app/models
+    environment:
+      - FLASK_PORT=3001
+      - ANSWER_EMBED_PATH=models/use_embeddings_cl1.pkl
+      - EMB_SIZE=512
+      - CLUSTER_ID=1
+    command: python3 main.py
+
+  indexer_cl_2:
+    image: 135.181.204.59:5000/indexer
+    build: indexer/
+    ports:
+      - 3002:3002
+    volumes:
+      - /root/qa_system/share:/app/models
+    environment:
+      - FLASK_PORT=3002
+      - ANSWER_EMBED_PATH=models/use_embeddings_cl2.pkl
+      - EMB_SIZE=512
+      - CLUSTER_ID=2
+    command: python3 main.py
+
+  indexer_cl_3:
+    image: 135.181.204.59:5000/indexer
+    build: indexer/
+    ports:
+      - 3003:3003
+    volumes:
+      - /root/qa_system/share:/app/models
+    environment:
+      - FLASK_PORT=3003
+      - ANSWER_EMBED_PATH=models/use_embeddings_cl3.pkl
+      - EMB_SIZE=512
+      - CLUSTER_ID=3
+    command: python3 main.py

@@ -1,0 +1,30 @@
+stages:
+  - deploy
+
+update_index:
+  stage: deploy
+  before_script: 
+    - echo "Configurate ssh connection to 65.108.144.165"
+    - 'which ssh-agent || ( apt-get install -qq openssh-client )'
+    - eval $(ssh-agent -s)
+    - mkdir -p ~/.ssh
+    - 'echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - ssh-add <(echo "$VM2_PRIVATE_KEY")
+    - echo "Updating index on 65.108.144.165"
+    - ssh root@65.108.144.165 "cp -r /var/models/$INDEX_GENERATION/* /root/qa_system/share/"
+  script:
+    - echo "Configurate ssh connection to 135.181.204.59"
+    - 'which ssh-agent || ( apt-get install -qq openssh-client )'
+    - eval $(ssh-agent -s)
+    - mkdir -p ~/.ssh
+    - 'echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
+    - ssh-add <(echo "$VM1_PRIVATE_KEY")
+    - echo "Updating index on 135.181.204.59"
+    - ssh root@135.181.204.59 "cp -r /var/models/$INDEX_GENERATION/* /root/qa_system/share/"
+    - echo "Updating services"
+    - ssh root@135.181.204.59 "docker service update --force --update-delay 30s --update-failure-action=rollback qa_system_indexer_cl_0"
+    - ssh root@135.181.204.59 "docker service update --force --update-delay 30s --update-failure-action=rollback qa_system_indexer_cl_1"
+    - ssh root@135.181.204.59 "docker service update --force --update-delay 30s --update-failure-action=rollback qa_system_indexer_cl_2"
+    - ssh root@135.181.204.59 "docker service update --force --update-delay 30s --update-failure-action=rollback qa_system_indexer_cl_3"
+    - ssh root@135.181.204.59 "docker service update --force --update-delay 30s --update-failure-action=rollback qa_system_gateway"
+    
